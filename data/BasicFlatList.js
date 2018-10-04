@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { View, StyleSheet, Text, FlatList, Image, Alert } from 'react-native'
+import { View, StyleSheet, Text, FlatList, Image, Alert, Platform, TouchableHighlight } from 'react-native'
 import flatListData from '../data/flatListData'
 import Swipeout from 'react-native-swipeout';
 import { Directions } from 'react-native-gesture-handler';
@@ -95,17 +95,28 @@ export default class BasicFlatList extends Component {
         })
     }
 
+    _onPressAdd = () => {
+        Alert.alert('added model')
+    }
     render() {
         return (
-            <View style={{ flex: 1, marginTop: 22 }}>
-                <FlatList data={flatListData}
-                    renderItem={({ item, index }) => {
-                        // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
-                        return (
-                            <FlatListItem item={item} index={index} parentFlatList={this}></FlatListItem>
-                        )
-                    }}></FlatList>
+            <View style={{ flex: 1, marginTop: Platform.OS === 'ios' ? 34 : 0 }}>
+                <View style={{ flex: 1, marginTop: 22 }}>
+                    <View style={{ backgroundColor: 'tomato', height: 64, flexDirection: 'row', justifyContent: 'flex-end', alignItems: "center" }}>
+                        <TouchableHighlight style={{ marginRight: 10 }} underlayColor='tomato' onPress={this._onPressAdd}>
+                            <Image style={{ width: 35, height: 35, color: 'grey', tintColor: 'green' }} source={require('../images/add.png')}></Image>
+                        </TouchableHighlight>
+                    </View>
+                    <FlatList data={flatListData}
+                        renderItem={({ item, index }) => {
+                            // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
+                            return (
+                                <FlatListItem item={item} index={index} parentFlatList={this}></FlatListItem>
+                            )
+                        }}></FlatList>
 
+
+                </View>
 
             </View>
 
