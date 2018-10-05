@@ -1,69 +1,68 @@
 import React, { Component } from 'react'
-import { View, StyleSheet, Text, FlatList, Image, Alert, Platform, TouchableHighlight } from 'react-native'
-import flatListData from '../data/flatListData'
-import Swipeout from 'react-native-swipeout';
-import { Directions } from 'react-native-gesture-handler';
+import { View, StyleSheet, FlatList, Image, Alert, Platform, TouchableHighlight, RefreshControl, TouchableNativeFeedback, Linking } from 'react-native'
+import { getPostRequest } from '../networking/server';
+import moment from 'moment';
+import { Text, Button, Card, Divider } from 'react-native-elements';
 
 class FlatListItem extends Component {
     constructor(props) {
         super(props)
         this.state = {
             activeRowKey: null,
+            imgLink: ''
         }
     }
 
-    render() {
-        const swipeSetting = {
-            autoClose: true,
-            onClose: (secId, rowId, direction) => {
-                if (this.state.activeRowKey != null) {
-                    this.setState({
-                        activeRowKey: null
-                    })
+    componentDidMount() {
+        this.downloadPostImg()
+    }
 
-                }
+    downloadPostImg = () => {
 
-            },
-            onOpen: (secId, rowId, direction) => {
-                this.setState({ activeRowKey: this.props.item.id })
-            },
-            right: [
-                {
-                    onPress: () => {
-                        const deletingRowKey = this.state.activeRowKey
+        const urlPostImg = 'https://gnews.network/wp-json/wp/v2/media/' + this.props.item.featured_media
+        async function getPostImg() {
+            try {
+                let response = await fetch(urlPostImg);
+                let responseJson = await response.json();
+                return responseJson;
+            } catch (error) {
+                console.error(`Error is:  ${error}`)
 
-                        Alert.alert('Alert', 'Are you sure you want to delete ?',
-                            [{ text: 'No', onPress: () => console.log('cancel Pressed'), style: 'cancel' }, {
-                                text: 'Yes', onPress: () => {
-                                    flatListData.splice(this.props.index, 1)
-                                    this.props.parentFlatList.refreshFlatList(deletingRowKey)
-                                }
-                            }])
-                    },
-                    text: 'Delete', type: 'delete'
-                }
-            ],
-            rowId: this.props.index,
-            sectionId: 1
+            }
         }
 
-        //    console.log(JSON.stringify(this.props.item.name));
+        getPostImg().then((r) => {
+            this.setState({ imgLink: r.source_url })
+        }).catch((error) => { this.setState({ imgLink: '' }) })
+
+    }
+
+    render() {
+        //  console.log('before checking ')
+        //   console.log(this.props.item.id);
+
+        const time = moment(this.props.item.date || moment.now()).fromNow();
+        const defaultImg =
+            'https://wallpaper.wiki/wp-content/uploads/2017/04/wallpaper.wiki-Images-HD-Diamond-Pattern-PIC-WPB009691.jpg';
+
+        //console.log(JSON.stringify(this.props.item.id));
+
         return (
-            <Swipeout {...swipeSetting}>
-                <View style={{ flex: 1, flexDirection: "column" }}>
-                    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'blue', }}>
-                        <Image source={{ uri: this.props.item.imageUrl }} style={{ width: 100, height: 100, margin: 15, padding: 10 }}></Image>
-                        <View style={{ flex: 1, flexDirection: "column" }}>
-                            <Text style={styles.flatListItem}>{this.props.item.name}</Text>
-                            <Text style={styles.flatListItem}>{this.props.item.color}</Text>
+
+            <TouchableNativeFeedback style={{ flex: 1 }} onPress={() => { Linking.openURL(this.props.item.link) }}>
+                <Card style={{ flex: 1, flexDirection: "column" }} containerStyle={{ padding: 0 }}>
+                    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'grey', }}>
+                        <Image source={{ uri: this.state.imgLink || defaultImg }} style={{ width: 100, height: 100, }}></Image>
+                        <View style={{ flex: 1, flexDirection: "column", height: 100, justifyContent: 'center', marginRight: 6 }}>
+                            <Text style={{ color: 'white', marginStart: 10, marginLeft: 10, fontSize: 14 }}>{this.props.item.title["rendered"]}</Text>
+                            <Text style={{ color: 'white', marginLeft: 10, marginTop: 4, fontSize: 10 }}>{time}</Text>
                         </View>
                     </View>
-                    <View style={{ height: 1, backgroundColor: 'white' }}></View>
-                </View>
+                    <Divider style={{ backgroundColor: '#dfe6e9' }} />
 
-            </Swipeout>
+                </Card>
 
-
+            </TouchableNativeFeedback>
 
         )
     }
@@ -73,9 +72,20 @@ class FlatListItem extends Component {
 const styles = StyleSheet.create({
     flatListItem: {
         color: 'white',
-        fontSize: 20,
-        padding: 10,
-
+        fontSize: 12,
+        padding: 10
+    },
+    noteStyle: {
+        margin: 5,
+        fontStyle: 'italic',
+        color: '#b2bec3',
+        fontSize: 10
+    },
+    featuredTitleStyle: {
+        marginHorizontal: 5,
+        textShadowColor: '#00000f',
+        textShadowOffset: { width: 3, height: 3 },
+        textShadowRadius: 3
     }
 })
 
@@ -84,38 +94,55 @@ export default class BasicFlatList extends Component {
         super(props)
         this.state = {
             deleteRowKey: null,
+            refreshing: false,
+            postResponse: []
         }
     }
 
-    refreshFlatList = (deleteKey) => {
-        this.setState((prevState) => {
-            return {
-                deleteRowKey: deleteKey
-            }
+    componentDidMount() {
+        this.refreshDataFromServer()
+    }
+
+    refreshDataFromServer = () => {
+        this.setState({ refreshing: true })
+        getPostRequest().then((r) => {
+            this.setState({ postResponse: r })
+            this.setState({ refreshing: false })
+        }).catch((error) => {
+            this.setState({ postResponse: [] })
+            this.setState({ refreshing: false })
         })
     }
 
-    _onPressAdd = () => {
-        Alert.alert('added model')
+    onRefresh = () => {
+        this.refreshDataFromServer()
     }
+
+
+
+
+
+
     render() {
         return (
             <View style={{ flex: 1, marginTop: Platform.OS === 'ios' ? 34 : 0 }}>
                 <View style={{ flex: 1, marginTop: 22 }}>
-                    <View style={{ backgroundColor: 'tomato', height: 64, flexDirection: 'row', justifyContent: 'flex-end', alignItems: "center" }}>
-                        <TouchableHighlight style={{ marginRight: 10 }} underlayColor='tomato' onPress={this._onPressAdd}>
-                            <Image style={{ width: 35, height: 35, color: 'grey', tintColor: 'green' }} source={require('../images/add.png')}></Image>
-                        </TouchableHighlight>
-                    </View>
-                    <FlatList data={flatListData}
+
+                    <FlatList data={this.state.postResponse}
                         renderItem={({ item, index }) => {
                             // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
+                            console.log(`item = ${JSON.stringify(item)} , index : ${index}`)
                             return (
                                 <FlatListItem item={item} index={index} parentFlatList={this}></FlatListItem>
                             )
-                        }}></FlatList>
-
-
+                        }}
+                        keyExtractor={(item, index) => item.id.toString()}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={this.state.refreshing}
+                                onRefresh={this.onRefresh} />
+                        }
+                    ></FlatList>
                 </View>
 
             </View>
