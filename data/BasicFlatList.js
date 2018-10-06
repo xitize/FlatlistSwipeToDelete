@@ -3,7 +3,10 @@ import { View, StyleSheet, FlatList, Image, Alert, Platform, TouchableHighlight,
 import { getPostRequest } from '../networking/server';
 import moment from 'moment';
 import { Text, Button, Card, Divider } from 'react-native-elements';
+import SecondActivity from './SecondActivity';
 
+
+//todo fix refresh rerendering
 class FlatListItem extends Component {
     constructor(props) {
         super(props)
@@ -12,6 +15,21 @@ class FlatListItem extends Component {
             imgLink: ''
         }
     }
+
+
+    static navigationOptions = {
+        //set title on phonescreen on the top view.
+        title: 'MainActivity',
+    };
+
+    OpenSecondActivityFunction = () =>
+    //Its using for navigate second screen which is present on App.js.
+    {
+        console.log('in item clicking items')
+        this.props.navigation.navigate('Second');
+    };
+
+
 
     componentDidMount() {
         this.downloadPostImg()
@@ -49,12 +67,12 @@ class FlatListItem extends Component {
 
         return (
 
-            <TouchableNativeFeedback style={{ flex: 1 }} onPress={() => { Linking.openURL(this.props.item.link) }}>
+            <TouchableNativeFeedback style={{ flex: 1 }} onPress={() => { console.log('clicked') }}>
                 <Card style={{ flex: 1, flexDirection: "column" }} containerStyle={{ padding: 0 }}>
-                    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'grey', }}>
+                    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#03A9F4', }}>
                         <Image source={{ uri: this.state.imgLink || defaultImg }} style={{ width: 100, height: 100, }}></Image>
                         <View style={{ flex: 1, flexDirection: "column", height: 100, justifyContent: 'center', marginRight: 6 }}>
-                            <Text style={{ color: 'white', marginStart: 10, marginLeft: 10, fontSize: 14 }}>{this.props.item.title["rendered"]}</Text>
+                            <Text style={{ color: 'white', marginStart: 10, marginLeft: 10, fontSize: 13 }}>{this.props.item.title["rendered"]}</Text>
                             <Text style={{ color: 'white', marginLeft: 10, marginTop: 4, fontSize: 10 }}>{time}</Text>
                         </View>
                     </View>
@@ -118,35 +136,30 @@ export default class BasicFlatList extends Component {
         this.refreshDataFromServer()
     }
 
-
-
-
-
-
     render() {
         return (
-            <View style={{ flex: 1, marginTop: Platform.OS === 'ios' ? 34 : 0 }}>
-                <View style={{ flex: 1, marginTop: 22 }}>
-
-                    <FlatList data={this.state.postResponse}
-                        renderItem={({ item, index }) => {
-                            // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
-                            console.log(`item = ${JSON.stringify(item)} , index : ${index}`)
-                            return (
-                                <FlatListItem item={item} index={index} parentFlatList={this}></FlatListItem>
-                            )
-                        }}
-                        keyExtractor={(item, index) => item.id.toString()}
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={this.state.refreshing}
-                                onRefresh={this.onRefresh} />
-                        }
-                    ></FlatList>
-                </View>
-
+            <View style={{ flex: 1 }}>
+                <FlatList data={this.state.postResponse}
+                    renderItem={({ item, index }) => {
+                        // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
+                        return (
+                            <FlatListItem item={item} index={index} parentFlatList={this}>
+                            </FlatListItem>
+                        )
+                    }}
+                    keyExtractor={(item, index) => item.id.toString()}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={this.state.refreshing}
+                            onRefresh={this.onRefresh} />
+                    }
+                ></FlatList>
             </View>
-
         )
+
+
     }
 }
+
+
+
