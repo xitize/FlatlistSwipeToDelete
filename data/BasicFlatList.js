@@ -3,32 +3,25 @@ import { View, StyleSheet, FlatList, Image, Alert, Platform, TouchableHighlight,
 import { getPostRequest } from '../networking/server';
 import moment from 'moment';
 import { Text, Button, Card, Divider } from 'react-native-elements';
-import SecondActivity from './SecondActivity';
+import MyModal from '../components/MyModel'
+import HTMLView from 'react-native-htmlview'
+
 
 
 //todo fix refresh rerendering
+
 class FlatListItem extends Component {
+
     constructor(props) {
         super(props)
         this.state = {
-            activeRowKey: null,
             imgLink: ''
         }
     }
 
-
-    static navigationOptions = {
-        //set title on phonescreen on the top view.
-        title: 'MainActivity',
+    _onPress = () => {
+        this.props.onPressItem(this.props.item);
     };
-
-    OpenSecondActivityFunction = () =>
-    //Its using for navigate second screen which is present on App.js.
-    {
-        console.log('in item clicking items')
-        this.props.navigation.navigate('Second');
-    };
-
 
 
     componentDidMount() {
@@ -36,7 +29,6 @@ class FlatListItem extends Component {
     }
 
     downloadPostImg = () => {
-
         const urlPostImg = 'https://gnews.network/wp-json/wp/v2/media/' + this.props.item.featured_media
         async function getPostImg() {
             try {
@@ -56,7 +48,7 @@ class FlatListItem extends Component {
     }
 
     render() {
-        //  console.log('before checking ')
+        //   console.log('before checking ')
         //   console.log(this.props.item.id);
 
         const time = moment(this.props.item.date || moment.now()).fromNow();
@@ -65,57 +57,63 @@ class FlatListItem extends Component {
 
         //console.log(JSON.stringify(this.props.item.id));
 
+        const title = this.props.item.title["rendered"]
         return (
+            <TouchableNativeFeedback style={{ flex: 1 }}  {...this.props}
+                onPress={this._onPress}>
 
-            <TouchableNativeFeedback style={{ flex: 1 }} onPress={() => { console.log('clicked') }}>
                 <Card style={{ flex: 1, flexDirection: "column" }} containerStyle={{ padding: 0 }}>
                     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#03A9F4', }}>
                         <Image source={{ uri: this.state.imgLink || defaultImg }} style={{ width: 100, height: 100, }}></Image>
                         <View style={{ flex: 1, flexDirection: "column", height: 100, justifyContent: 'center', marginRight: 6 }}>
-                            <Text style={{ color: 'white', marginStart: 10, marginLeft: 10, fontSize: 13 }}>{this.props.item.title["rendered"]}</Text>
+                            <HTMLView value={`<p> ${title} </p>`} stylesheet={myTitle} style={{ marginStart: 10, marginLeft: 10, }}></HTMLView>
                             <Text style={{ color: 'white', marginLeft: 10, marginTop: 4, fontSize: 10 }}>{time}</Text>
                         </View>
                     </View>
-                    <Divider style={{ backgroundColor: '#dfe6e9' }} />
-
                 </Card>
-
             </TouchableNativeFeedback>
-
         )
     }
 }
 
-
-const styles = StyleSheet.create({
-    flatListItem: {
-        color: 'white',
-        fontSize: 12,
-        padding: 10
-    },
-    noteStyle: {
-        margin: 5,
-        fontStyle: 'italic',
-        color: '#b2bec3',
-        fontSize: 10
-    },
-    featuredTitleStyle: {
-        marginHorizontal: 5,
-        textShadowColor: '#00000f',
-        textShadowOffset: { width: 3, height: 3 },
-        textShadowRadius: 3
+const myTitle = StyleSheet.create({
+    p: {
+        fontSize: 13,
+        fontWeight: '600',
+        alignContent: 'center',
+        color: 'white'
     }
-})
+});
+
+
 
 export default class BasicFlatList extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            deleteRowKey: null,
             refreshing: false,
-            postResponse: []
+            postResponse: [],
+            page: 0,
+            isModalVisible: false,
+            selectedItem: null
         }
     }
+
+    _onPressItem = (item) => {
+        this._showModal(item);
+    };
+
+    _hideMyModal = () => {
+        this.setState({ isModalVisible: false })
+    }
+
+    _showModal = (item) => this.setState({
+        isModalVisible: true,
+        selectedItem: item
+    })
+
+
+
 
     componentDidMount() {
         this.refreshDataFromServer()
@@ -136,24 +134,29 @@ export default class BasicFlatList extends Component {
         this.refreshDataFromServer()
     }
 
+
+
     render() {
+
         return (
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, flexDirection: 'column' }}>
                 <FlatList data={this.state.postResponse}
                     renderItem={({ item, index }) => {
                         // console.log(`item = ${JSON.stringify(item)} , index = ${index}`)
                         return (
-                            <FlatListItem item={item} index={index} parentFlatList={this}>
-                            </FlatListItem>
+                            <FlatListItem item={item} index={index} parentFlatList={this} onPressItem={() => this._onPressItem(item)} />
+
                         )
                     }}
-                    keyExtractor={(item, index) => item.id.toString()}
+                    keyExtractor={(item) => item.id.toString()}
                     refreshControl={
                         <RefreshControl
                             refreshing={this.state.refreshing}
                             onRefresh={this.onRefresh} />
                     }
                 ></FlatList>
+                {this.state.isModalVisible &&
+                    <MyModal selectedItem={this.state.selectedItem} modalVisible={this.state.isModalVisible} hideModal={this._hideMyModal} />}
             </View>
         )
 

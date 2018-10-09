@@ -16,7 +16,7 @@ import MusicScreen from './MusicScreen';
 import TravelScreen from './TravelScreen';
 
 
-var MainScreenNavigator = createMaterialTopTabNavigator({
+const MainScreenNavigator = createMaterialTopTabNavigator({
     Tab1: { screen: HomeScreen },
     Tab2: { screen: BusinessScreen },
     Tab3: { screen: EntertainmentScreen },
@@ -39,7 +39,7 @@ var MainScreenNavigator = createMaterialTopTabNavigator({
 
 
 MainScreenNavigator.navigationOptions = {
-    title: 'Tab Example'
+    title: 'Gnews'
 }
 
 export default MainScreenNavigator
